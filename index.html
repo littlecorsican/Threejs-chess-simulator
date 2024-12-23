@@ -29,7 +29,7 @@
     import {MTLLoader} from "./js/MTLLoader.js";
     import { chessPieces } from './js/chessPieces.js'
     import { pgnData } from './js/PGN.js'
-    import { appendToHistory } from './js/helper.js'
+    import { appendToHistory, getChessPieceName } from './js/helper.js'
 
     const container = document.getElementById("container");
 
@@ -138,13 +138,13 @@
           const legalMove = chessGame.move({ from, to }, { sloppy: true });
 
           if (!legalMove) {
-            appendToHistory('history', `Illegal move: ${move.color} ${move.piece} from ${move.from} to ${move.to}`);
+            appendToHistory('history', `Illegal move: ${move.color} ${getChessPieceName(move.piece)} from ${move.from} to ${move.to}`);
             i++;
             setTimeout(animateMove, 1500); // Continue to the next move
             return;
           }
 
-          appendToHistory('history', `${move.color} - ${move.piece}, ${move.from} to ${move.to}`);
+          appendToHistory('history', `${move.color} - ${getChessPieceName(move.piece)}, ${move.from} to ${move.to}`);
 
           for (let key in chessBoardMapper) {
             if (chessBoardMapper[key] === from) {
