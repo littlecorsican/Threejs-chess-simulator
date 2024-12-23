@@ -17,7 +17,7 @@
   <button id="startGame" style="position: absolute; top: 0; left: 0; margin: 8px; padding: 8px">
     Start Game
   </button>
-  <ol id="history" style="position: absolute; top: 100px; left: 10px; margin: 8px; padding: 8px; color:aliceblue">
+  <ol id="history" style="position: absolute; top: 100px; left: 15px; margin: 8px; padding: 8px; color:aliceblue">
     
   </ol>
 
@@ -146,6 +146,23 @@
 
           appendToHistory('history', `${move.color} - ${getChessPieceName(move.piece)}, ${move.from} to ${move.to}`);
 
+          // Check if the move captures another piece
+          console.log("move", move, move.san.includes('x'))
+          if (move.san.includes('x')) {
+            for (let key in chessBoardMapper) {
+              if (chessBoardMapper[key] === to) {
+                const capturedPiece = pieces.get(key);
+                if (capturedPiece) {
+                  scene.remove(capturedPiece); // Remove the captured piece from the scene
+                  pieces.delete(key); // Remove it from the pieces map
+                  chessBoardMapper[key] = ""
+                  appendToHistory('history', `${getChessPieceName(move.piece)} captured piece at ${to}`);
+                }
+                break;
+              }
+            }
+          }
+
           for (let key in chessBoardMapper) {
             if (chessBoardMapper[key] === from) {
               const piece = pieces.get(key);
@@ -169,11 +186,15 @@
 
                 function movePiece() {
                   const elapsed = Date.now() - startTime;
-                  const t = Math.min(elapsed / duration, 1); // Normalize time
+                  const t = Math.min(elapsed / duration, 1); // Normalize time (0 to 1)
 
-                  // Interpolate positions
+                  // Interpolate positions for X and Z
                   piece.position.x = THREE.MathUtils.lerp(initialPosition.x, targetPosition.x, t);
                   piece.position.z = THREE.MathUtils.lerp(initialPosition.z, targetPosition.z, t);
+
+                  // Add parabolic motion for Y (leap effect)
+                  const maxHeight = 2; // Maximum height of the leap
+                  piece.position.y = maxHeight * 4 * t * (1 - t); // Parabolic equation
 
                   // If animation is not complete, request another frame
                   if (t < 1) {
@@ -196,6 +217,7 @@
           appendToHistory('history', "All moves executed");
         }
       }
+
 
       animateMove();
     }

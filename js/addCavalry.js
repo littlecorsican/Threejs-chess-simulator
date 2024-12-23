@@ -17,9 +17,21 @@ export async function addCavalry({
     object.scale.set(0.4,0.4,0.4)
     object.position.set(4.5, 0, -6.5);
 
+
+    if (color === "#7f7f7d") {
+      console.log("fafasdfasf", color, Math.PI)
+      object.rotation.z = Math.PI; // Rotate 180 degrees around the Y-axis
+    }
+
     const axis = new THREE.Vector3(1, 0, 0);  // Rotate around the
     const angle = Math.PI / 2 * 3;  // 90 degrees in radians
     object.setRotationFromAxisAngle(axis, angle);
+    if (color === "#7f7f7d") {
+
+      object.rotation.z = Math.PI; // Rotate 180 degrees around the Y-axis
+      object.position.set(-4.5, 0, 6.5);
+    }
+  
     
     object.traverse((child) => {
       if (child.isMesh) {
