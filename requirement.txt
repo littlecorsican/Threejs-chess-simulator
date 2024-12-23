@@ -1,0 +1,27 @@
+# 3D Chess Board Specification
+
+## Overview
+Create a standalone HTML application using Three.js to render a 3D chess board with interactive features and dynamic gameplay functionality.
+
+---
+
+## Features
+
+### Basic Setup
+- Render a 3D chessboard and chess pieces using Three.js.
+- Use 3D chess pieces from [free3d.com](https://free3d.com/3d-models/obj-chess) or any other source.
+- Ensure camera and mouse controls are implemented to allow free movement around the scene.
+
+### Camera Controls
+Add keyboard commands:
+- **0**: Top-down view of the entire board.
+- **1**: Player 1 perspective.
+- **2**: Player 2 perspective.
+- **3**: Side view (neutral, not from player 1 or player 2 sides).
+- **4**: play PGN file
+### Piece Interactions
+- All chess pieces must start in their correct initial positions.
+
+
+### PGN Integration
+- Read a PGN file from here: https://www.pgnmentor.com/players/Abdusattorov.zip and when we press 4, it plays the moves of the PGN file

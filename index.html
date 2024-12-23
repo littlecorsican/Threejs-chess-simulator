@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Chess Board</title>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.138.3/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.138.3/examples/js/controls/OrbitControls.js"></script> 
+
+
+</head>
+<body>
+  <div id="container" style="width: 100%; height: 100vh;"></div>
+  <input type="file" id="pgnFileInput" />
+  <div id="pgnContent"></div>
+
+  <button id="startGame" style="position: absolute; top: 0; left: 0; margin: 8px; padding: 8px">
+    Start Game
+  </button>
+  <ol id="history" style="position: absolute; top: 100px; left: 10px; margin: 8px; padding: 8px; color:aliceblue">
+    
+  </ol>
+
+
+  <script type="module">
+
+    import { Chess } from 'https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.js';
+    import {OBJLoader} from "./js/OBJLoader.js";
+    import {MTLLoader} from "./js/MTLLoader.js";
+    import { chessPieces } from './js/chessPieces.js'
+    import { pgnData } from './js/PGN.js'
+    import { appendToHistory } from './js/helper.js'
+
+    const container = document.getElementById("container");
+
+    // Scene, Camera, Renderer
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    container.appendChild(renderer.domElement);
+
+    // Lighting
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(10, 20, 10);
+    light.castShadow = true;
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x404040));
+
+    // Chessboard
+    const boardSize = 8;
+    const tileSize = 2;
+    const board = new THREE.Group();
+
+    for (let i = 0; i < boardSize; i++) {
+      for (let j = 0; j < boardSize; j++) {
+        const tile = new THREE.Mesh(
+          new THREE.PlaneGeometry(tileSize, tileSize),
+          new THREE.MeshStandardMaterial({ color: (i + j) % 2 === 0 ? 0xffffff : 0x000000 })
+        );
+        tile.rotation.x = -Math.PI / 2;
+        tile.position.set(i * tileSize - (boardSize * tileSize) / 2 + tileSize / 2, 0, j * tileSize - (boardSize * tileSize) / 2 + tileSize / 2);
+        tile.receiveShadow = true;
+        board.add(tile);
+      }
+    }
+    scene.add(board);
+
+    // Camera Controls
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    camera.position.set(0, 20, 20);
+    controls.update();
+
+    // Chess pieces (Placeholder cubes for simplicity)
+    const pieces = new Map();
+    const chessBoardMapper = {} //  use to map chess piece information to current coordinates
+    appendToHistory('history', 'Loading 3d models...')
+
+    Promise.all(
+      chessPieces.map(async (piece) => {
+        const temp = await piece.func({
+          color: piece.colour,
+          x: piece.x,
+          y: piece.y,
+          z: piece.z,
+        });
+        pieces.set(`${piece.name}_${piece.side}`, temp);
+        chessBoardMapper[`${piece.name}_${piece.side}`] = piece.startingLocation.toLowerCase()
+        scene.add(temp);
+      })
+    ).finally(() => {
+      console.log("ready");
+      appendToHistory('history', 'Ready')
+      console.log("chessBoardMapper", chessBoardMapper)
+    });
+
+    // PGN Handling
+    const chess = new Chess();
+
+        // Keyboard Events
+    window.addEventListener("keydown", (event) => {
+      switch (event.key) {
+        case "0":
+          camera.position.set(0, 20, 0);
+          camera.lookAt(0, 0, 0);
+          break;
+        case "1":
+          camera.position.set(0, 10, 20);
+          camera.lookAt(0, 0, 0);
+          break;
+        case "2":
+          camera.position.set(0, 10, -20);
+          camera.lookAt(0, 0, 0);
+          break;
+        case "3":
+          camera.position.set(20, 0, 0);
+          camera.lookAt(0, 0, 0);
+          break;
+        case "4":
+          playPGN();
+          break;
+      }
+    });
+
+    function playPGN() {
+      chess.load_pgn(pgnData);
+      const moves = chess.history({ verbose: true });
+
+      let i = 0;
+      function animateMove() {
+        if (i < moves.length) {
+          const move = moves[i];
+          const from = move.from;
+          const to = move.to;
+
+          appendToHistory('history', `${move.color} - ${move.piece}, ${move.from} to ${move.to}`)
+
+          for (let key in chessBoardMapper) {
+            if (chessBoardMapper[key] === from) {
+              const piece = pieces.get(key);
+              if (piece) {
+                // Target position
+                const targetX = to.charCodeAt(0) - 97;
+                const targetZ = 8 - parseInt(to[1]);
+                const targetPosition = {
+                    x: targetX * tileSize - (boardSize * tileSize) / 2 + tileSize / 2,
+                    z: targetZ * tileSize - (boardSize * tileSize) / 2 + tileSize / 2,
+                };
+
+                const initialPosition = {
+                    x: piece.position.x,
+                    y: piece.position.y,
+                    z: piece.position.z,
+                };
+
+                const startTime = Date.now();
+                const duration = 1500; // Duration in milliseconds
+
+                function movePiece() {
+                  const elapsed = Date.now() - startTime;
+                  const t = Math.min(elapsed / duration, 1); // Normalize time
+
+                  // Interpolate positions
+                  piece.position.x = THREE.MathUtils.lerp(initialPosition.x, targetPosition.x, t);
+                  piece.position.z = THREE.MathUtils.lerp(initialPosition.z, targetPosition.z, t);
+
+                  // If animation is not complete, request another frame
+                  if (t < 1) {
+                      requestAnimationFrame(movePiece);
+                  } else {
+                      // Update the chess board mapper
+                      chessBoardMapper[key] = to;
+                      i++;
+                  setTimeout(animateMove, 1500); // Delay before the next move
+                  }
+                }
+
+                movePiece();
+              }
+              break;
+            }
+          }
+        } else {
+          // Add the "All moves executed" message here
+          appendToHistory('history', "All moves executed");
+        }
+      }
+
+
+      animateMove();
+    }
+
+    // Render Loop
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+
+    document.getElementById("startGame").addEventListener("click", ()=>{
+      playPGN()
+    })
+
+
+
+  </script>
+
+
+  
+</body>
+</html>
