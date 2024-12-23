@@ -1,0 +1,61 @@
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  
+  if (file) {
+    const reader = new FileReader();
+    
+    // Set up a function to handle the file once it's read
+    reader.onload = function(fileEvent) {
+      const fileContent = fileEvent.target.result;
+      displayPGNContent(fileContent);
+    };
+    
+    // Read the file as text
+    reader.readAsText(file);
+  } else {
+    alert('No file selected');
+  }
+}
+
+function displayPGNContent(content) {
+  //const pgnDisplay = document.getElementById('pgnContent');
+  //pgnDisplay.innerText = content;  // Display the content in a <pre> block
+  console.log("content", content)
+  const { headers, moves } = parsePGN(content)
+  console.log("moves", moves)
+  console.log("headers", headers)
+}
+
+function parsePGN(pgn) {
+  const headers = {};
+  const moves = [];
+
+  // Regular expression to match headers
+  const headerRegex = /\[([A-Za-z]+)\s+"([^"]+)"\]/g;
+  let match;
+
+  // Extract headers from PGN
+  while ((match = headerRegex.exec(pgn)) !== null) {
+      const headerName = match[1];
+      const headerValue = match[2];
+      headers[headerName] = headerValue;
+  }
+
+  // Extract moves from PGN (moves are typically after the headers section)
+  const movesSection = pgn.replace(/\[.*?\]\s*/g, ''); // Remove headers
+  const moveString = movesSection.trim().split(/\s+/); // Split moves by spaces
+  let currentMove = '';
+  for (let i = 0; i < moveString.length; i++) {
+    currentMove += moveString[i] + ' ';
+    if (i % 2 === 1) { // Every 2nd entry is a complete move (White and Black)
+        moves.push(currentMove.trim());
+        currentMove = '';
+    }
+  }
+
+  // Return an object containing headers and moves
+  return { headers, moves };
+}
+
+
+    document.getElementById('pgnFileInput').addEventListener('change', handleFileSelect);

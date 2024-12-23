@@ -95,10 +95,7 @@
       console.log("chessBoardMapper", chessBoardMapper)
     });
 
-    // PGN Handling
-    const chess = new Chess();
-
-        // Keyboard Events
+    // Keyboard Events
     window.addEventListener("keydown", (event) => {
       switch (event.key) {
         case "0":
@@ -124,17 +121,30 @@
     });
 
     function playPGN() {
-      chess.load_pgn(pgnData);
-      const moves = chess.history({ verbose: true });
+      const chessGame = new Chess(); // Create a fresh instance of chess.js
+      const chessGame2 = new Chess();
+      chessGame2.load_pgn(pgnData); // Load the PGN into the original chess object
 
+      const moves = chessGame2.history({ verbose: true }); // Retrieve the list of moves
       let i = 0;
+
       function animateMove() {
         if (i < moves.length) {
           const move = moves[i];
           const from = move.from;
           const to = move.to;
 
-          appendToHistory('history', `${move.color} - ${move.piece}, ${move.from} to ${move.to}`)
+          // Replay the move on the fresh instance
+          const legalMove = chessGame.move({ from, to }, { sloppy: true });
+
+          if (!legalMove) {
+            appendToHistory('history', `Illegal move: ${move.color} ${move.piece} from ${move.from} to ${move.to}`);
+            i++;
+            setTimeout(animateMove, 1500); // Continue to the next move
+            return;
+          }
+
+          appendToHistory('history', `${move.color} - ${move.piece}, ${move.from} to ${move.to}`);
 
           for (let key in chessBoardMapper) {
             if (chessBoardMapper[key] === from) {
@@ -144,14 +154,14 @@
                 const targetX = to.charCodeAt(0) - 97;
                 const targetZ = 8 - parseInt(to[1]);
                 const targetPosition = {
-                    x: targetX * tileSize - (boardSize * tileSize) / 2 + tileSize / 2,
-                    z: targetZ * tileSize - (boardSize * tileSize) / 2 + tileSize / 2,
+                  x: targetX * tileSize - (boardSize * tileSize) / 2 + tileSize / 2,
+                  z: targetZ * tileSize - (boardSize * tileSize) / 2 + tileSize / 2,
                 };
 
                 const initialPosition = {
-                    x: piece.position.x,
-                    y: piece.position.y,
-                    z: piece.position.z,
+                  x: piece.position.x,
+                  y: piece.position.y,
+                  z: piece.position.z,
                 };
 
                 const startTime = Date.now();
@@ -167,12 +177,12 @@
 
                   // If animation is not complete, request another frame
                   if (t < 1) {
-                      requestAnimationFrame(movePiece);
+                    requestAnimationFrame(movePiece);
                   } else {
-                      // Update the chess board mapper
-                      chessBoardMapper[key] = to;
-                      i++;
-                  setTimeout(animateMove, 1500); // Delay before the next move
+                    // Update the chess board mapper
+                    chessBoardMapper[key] = to;
+                    i++;
+                    setTimeout(animateMove, 1500); // Delay before the next move
                   }
                 }
 
@@ -187,9 +197,9 @@
         }
       }
 
-
       animateMove();
     }
+
 
     // Render Loop
     function animate() {
