@@ -153,15 +153,36 @@
               if (chessBoardMapper[key] === to) {
                 const capturedPiece = pieces.get(key);
                 if (capturedPiece) {
-                  scene.remove(capturedPiece); // Remove the captured piece from the scene
-                  pieces.delete(key); // Remove it from the pieces map
-                  chessBoardMapper[key] = ""
-                  appendToHistory('history', `${getChessPieceName(move.piece)} captured piece at ${to}`);
+                  // Disintegration animation
+                  const startTime = Date.now();
+                  const duration = 1500; // Duration in milliseconds
+
+                  function disintegrate() {
+                    const elapsed = Date.now() - startTime;
+                    const t = Math.min(elapsed / duration, 1); // Normalize time (0 to 1)
+
+                    // Gradually scale the piece down
+                    capturedPiece.scale.set(1 - t, 1 - t, 1 - t);
+
+                    // If animation is not complete, request another frame
+                    if (t < 1) {
+                      requestAnimationFrame(disintegrate);
+                    } else {
+                      // Remove the piece from the scene and cleanup
+                      scene.remove(capturedPiece);
+                      pieces.delete(key);
+                      chessBoardMapper[key] = "";
+                      appendToHistory('history', `${getChessPieceName(move.piece)} captured piece at ${to}`);
+                    }
+                  }
+
+                  disintegrate(); // Start the animation
                 }
                 break;
               }
             }
           }
+
 
           for (let key in chessBoardMapper) {
             if (chessBoardMapper[key] === from) {
